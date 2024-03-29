@@ -1,0 +1,9 @@
+# Strona Internetowa posiadjąca interfejs graficzny do kontroli silników
+#żeby użyć
+Skrypt uruchamiający rosbridge został dodany do pliku launch. Wystarczy uruchomić:
+"roslaunch virtual_dc_motor virtual_dc_motor.launch"
+
+gui.html odpowiada za widok strony, logika strony jest w pliku script. Trzeba nacisnąć przycisk "Closed" w prawym górnym rogu żeby połączyć się za pomocą ros.connect().Przycisk informuje o aktualnym stanie połączenia.
+
+Szerszy opis pojawi się wkrótce tutaj oraz w obszerniejszych komentarzach na temat projektu w kodzie źródłowym, wraz z ostatnią wizualizacją trzech silników zależnych od siebie (pkt 7 i 8).
+
