@@ -287,30 +287,34 @@ function createPublischers(){
   const canvas3 = document.getElementById("myCanvas3");
   const ctx3 = canvas3.getContext("2d");
 
-   const canvasTable = [canvas,canvas2,canvas3];
-   const ctxTable = [ctx,ctx2,ctx3];
+  //animacja 3 motorow
+  const realational_motor_visualization_canvas = document.getElementById("realational_motor_visualization");
+  const realational_motor_visualization_ctx = realational_motor_visualization_canvas.getContext("2d");
+
+   const canvasTable = [canvas,canvas2,canvas3,realational_motor_visualization_canvas];
+   const ctxTable = [ctx,ctx2,ctx3,realational_motor_visualization_ctx];
 
   // Narysuj silnik 
-  function drawCircle(context){
+  function drawCircle(x,y,r,context){
    
     context.beginPath();
-    context.arc(130,130,50,0,2 * Math.PI);
+    context.arc(x,y,r,0,2 * Math.PI);
     context.fillStyle = 'blue';
     context.fill();
     
   }
   
  // funkcja realizuja rysowanie ramienia silnika
-  function drawLine(ctx,angle,l){
+  function drawLine(s1,s2,ctx,angle){
+    
     // punkt startowy lini
-    const x1 = 130 + 50* Math.cos(angle);
-    const y1 = 130 + 50 * Math.sin(angle);
+    const x1 = s1 + 50* Math.cos(angle);
+    const y1 = s2 + 50 * Math.sin(angle);
 
     // punkt koncowy lini
-    const x2 = 130 + 100 * Math.cos(angle); // tutaj daj dane z tablicy 
-    const y2 = 130 + 100 * Math.sin(angle);
-   
-
+    const x2 = s1 + 100 * Math.cos(angle); // tutaj daj dane z tablicy 
+    const y2 = s2 + 100 * Math.sin(angle);
+ 
     // rysowanie lini
     ctx.beginPath();  
     ctx.moveTo(x1,y1);
@@ -319,18 +323,48 @@ function createPublischers(){
 
   }
   
- 
+ let positions = [{x:250, y:250}, {x:250, y:350}, {x:250,y:450}];
  // funkcja odpowiadajaca za animacje silnika
   function animate(){
 
-   //mamy tablice wszystkich canvas i iterujemy w tablicy po nich
+   //obsluga 3 animacji silnikow
     for(let i = 0; i < 3; i++)
     {
     ctxTable[i].clearRect(0,0 ,canvasTable[i].width,canvasTable[i].height);
-    drawCircle(ctxTable[i],angles[i]);
-    drawLine(ctxTable[i],angles[i],length_of_manipulator[1]);   
+    drawCircle(130,130,50,ctxTable[i],angles[i]);
+    drawLine(130,130,ctxTable[i],angles[i]);   
     }
+    // obsuga animacji 3 silnikow zaleznych od siebie
+    
+    realational_motor_visualization_ctx.clearRect(0,0 ,realational_motor_visualization_canvas.width,realational_motor_visualization_canvas.height);
+    // Rysowanie 3 kol
+    for(let i=0; i<3;i++)
+    { 
+      let x,y;
+      // pierwsze kolo
+      if(i === 0)
+      {
+        x = positions[i].x;
+        y = positions[i].y;
+      }else{
+        const prevX = positions[i-1].x;
+        const prevY = positions[i-1].y;
 
+        x = prevX + Math.cos(angles[i]) * 100;
+        y = prevY + Math.sin(angles[i])* 100;
+      
+        // aktualizacja o aktualna pozycje
+        positions[i].x = x;
+        positions[i].y = y;
+        realational_motor_visualization_ctx.beginPath();  
+        realational_motor_visualization_ctx.moveTo(prevX,prevY);
+        realational_motor_visualization_ctx.lineTo(x,y);
+        realational_motor_visualization_ctx.stroke();
+      }
+      console.log(positions,x,y);
+      drawCircle(positions[i].x,positions[i].y,25,realational_motor_visualization_ctx);
+    }
+   
     requestAnimationFrame(animate);
    
   }
@@ -401,6 +435,7 @@ function updateLength(result){
 
 
   
+
 
 
 
