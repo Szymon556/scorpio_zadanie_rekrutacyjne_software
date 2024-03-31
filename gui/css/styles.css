@@ -11,3 +11,16 @@
     width: 260px;
     
 }
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height:  100vh;
+    flex-direction: column;
+}
+.aniamation3{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}

@@ -1,19 +1,61 @@
 
 function startProgram(){
-    
-  let cs_0_direction = 1;
+
+  /*
+   kierunki silnikow, jezeli kreca sie w prawo to zmienna ma wartosc 1,
+  jezeli w lewo to -1. Zmiana nastepuje po nascisnieciu odpowiedniego klawiasza
+  */ 
+  let cs_0_direction = 1; 
   let cs_1_direction = 1;
   let cs_2_direction = 1;
+  
+  // zmienna odpowiedzialna za przyciski
   let bt = '';
-  let publischers = '';
+
+  // tablica  odpowiedzilana za przetrzymywanie topicow publukujacyh dane
+  let publischers = [];
+
+  // zmienna w ktorej bedzie obiekt zarzadzajacy polaczeniem
   let ros = '';
-  let listners = '';
+
+  // tablica odpowiedzialna za preztrzymywanie wszystkich topicow
+  let listners = [];
+
+  // zmienna odpowiedzialna za przetrzymywanie obiektu serwisu
   let getJointsLength = '';
-  let length_of_manipulator = 0;
-  var request = new ROSLIB.ServiceRequest({});
+
+  // pusty request do serwisu
+  let request = new ROSLIB.ServiceRequest({});
+  
+  // zmienie odpowiedzialne za moc silnika
+  let value_of_power_motor0 = 0;
+  let value_of_power_motor1 = 0;
+  let value_of_power_motor2 = 0;
+
+  // pozycja pocatkowa 3 kol reprezantujacyh 3 silniki
+  let positions = [{x:250, y:250}, {x:250, y:350}, {x:250,y:450}];
+
+  // zmienna odpowiedzialna za reset pozycji animacji 3 silnikow zaleznych so siebie
+  let reset_position = false;
+
+  // pobranie elementow wszystkich suwakow
+  const sliders = document.querySelectorAll('.Sliders');
+
+  //tablica z katami uzyta do animacji 3 silnikow, zaleznych od siebie
+  let deg = [];
+
+  // obiekt do publikacji danych, publikowany z programu do silnikow
+  var mes = new ROSLIB.Message({
+    data: 0
+})
   
 
-// create angles
+// pobranie elementu do wyswietlania wartosci suwaka dla silnikow
+const power_regulation_motor0_value = document.getElementById('sliderValue');
+const power_regulation_motor1_value = document.getElementById('sliderValue2');
+const power_regulation_motor2_value = document.getElementById('sliderValue3');
+
+// tworzenie funkcji ktora stworzy tablice katow dla 3 silnikow, i zainicjalizowaniem jej 3 wartosciami PI
 function createAngles(){
   let tables_of_angles = [];
   for(let i=0; i<3;i++)
@@ -23,6 +65,8 @@ function createAngles(){
   }
   return tables_of_angles;
 }
+
+// tworzenie tablici katow ktora posluzy nam do aktualizacji pozycji silnikow
 let angles = createAngles();
 
 // Funkcja odpowaidajaca za nawiazanie polaczenia
@@ -45,7 +89,8 @@ function connect(){
 
   return ros_object
 }
-    
+ 
+// funkcja realizujaca stworzenie 3 nasluchujaych topicow
 function createListners(){
   let motors_listners_table = [];
   
@@ -64,29 +109,38 @@ function createListners(){
   
 }
   
-// funkcja wyswietlajaca pozycje
-// zobaczyc czy dobrze
+// funkcja wyswietlajaca pozycje, polozenia ramienia silnika dla kazdego silnika po koleji
   function displayValue(position,motor){
-    // update silnika 1 ale tak zeby nie rownoczesnie
-    // potem zobaczyc czy bez setTimeout bedzie dzialac
-      if(motor === 1 )
-      {
-      var x = position.data;
-      angles[0] = ((x * 0.0879)* Math.PI)/180;
-      document.getElementById("position_0").innerHTML = String(((angles[0]*180)/Math.PI).toFixed(2));
-      }
-      else if(motor === 2 )
-      {
-      var x = position.data;
-      angles[1] = ((x * 0.0879)* Math.PI)/180;
-      document.getElementById("position_1").innerHTML = String(((angles[1]*180)/Math.PI).toFixed(2));
-      } else if(motor === 3 )
-      {
-      var x = position.data;
-      angles[2] = ((x * 0.0879)* Math.PI)/180;
-      document.getElementById("position_2").innerHTML = String(((angles[2]*180)/Math.PI).toFixed(2));
-      }
 
+     
+      let x = 0;
+      switch(motor)
+      {
+        case 1:
+          // pobierz pozycje silnika
+          x = position.data;
+          //oblicz pozycje w kacie
+          angles[0] = ((x * 0.0879)* Math.PI)/180;
+          //wyswietl ja
+          document.getElementById("position_0").innerHTML = String(((angles[0]*180)/Math.PI).toFixed(2));
+          break;
+
+        case 2:
+          x = position.data;
+          angles[1] = ((x * 0.0879)* Math.PI)/180;
+          document.getElementById("position_1").innerHTML = String(((angles[1]*180)/Math.PI).toFixed(2));
+          break;
+
+        case 3:
+          x = position.data;
+          angles[2] = ((x * 0.0879)* Math.PI)/180;
+          document.getElementById("position_2").innerHTML = String(((angles[2]*180)/Math.PI).toFixed(2));
+          break;
+        default:
+          console.log('Nie ma takiego silnik');
+
+      }
+      // za kazdym razem gdy odswieazamy wartosci pozycji to tez odswiezamy wartosc dlugosci
       getJointsLength.callService(request, (result) => 
       {
         updateLength(result);
@@ -124,52 +178,57 @@ function createPublischers(){
   
 }
    
-  // pobranie elementu suwaka
-  const sliders = document.querySelectorAll('.Sliders');
+
+  
   
 
-  // pobranie elementu do wyswietlania wartosci suwaka dla silnikow
-  const power_regulation_motor0_value = document.getElementById('sliderValue');
-  const power_regulation_motor1_value = document.getElementById('sliderValue2');
-  const power_regulation_motor2_value = document.getElementById('sliderValue3');
-  
-  
-  var mes = new ROSLIB.Message({
-    data: 0
-})
   // funkcja do aktualizacji wartosci suwaka
   function updateValue(sliderId){
     
-
+    // wa zaleznosi jaki suwak przesuwamy, to bedziemy adekwatne pole zmieniac pod danym suwakiem
     switch(sliderId){
 
       case 'mySlider':
-        var value_of_power_motor0 = Number(document.getElementById(sliderId).value) * cs_0_direction;
+        value_of_power_motor0 = Number(document.getElementById(sliderId).value) * cs_0_direction;
         mes.data = Number(value_of_power_motor0);
         publischers[0].publish(mes);
         power_regulation_motor0_value.innerHTML = value_of_power_motor0;
         break;
 
       case 'mySlider2':
-        var value_of_power_motor1 = Number(document.getElementById(sliderId).value) * cs_1_direction;
+        value_of_power_motor1 = Number(document.getElementById(sliderId).value) * cs_1_direction;
         mes.data = Number(value_of_power_motor1);
         publischers[1].publish(mes);
         power_regulation_motor1_value.innerHTML = value_of_power_motor1;
         break;
 
       case 'mySlider3':
-        var value_of_power_motor2 = Number(document.getElementById(sliderId).value) * cs_2_direction;
+        value_of_power_motor2 = Number(document.getElementById(sliderId).value) * cs_2_direction;
         mes.data = Number(value_of_power_motor2);
         publischers[2].publish(mes);
         power_regulation_motor2_value.innerHTML = value_of_power_motor2;
         break;
-
+      // za kazdym razem gdy albo resetujesmy animacje 3 silnikow lub nawiazujemy nowe polaczenie zresetuj wszystko
       case 'startProgram':
+        
         power_regulation_motor0_value.innerHTML = 0;
         power_regulation_motor1_value.innerHTML = 0;
         power_regulation_motor2_value.innerHTML = 0;
-        break;
 
+        mySlider.value = 0;
+        mySlider2.value = 0;
+        mySlider3.value = 0;
+        
+
+        mes.data = Number(0);
+        publischers[0].publish(mes);
+        mes.data = Number(0);
+        publischers[1].publish(mes);
+        mes.data = Number(0);
+        publischers[2].publish(mes);
+       
+        break;
+    
       default:
         console.log('UpdateValue Case, nie zostal podany nie podany parametr');
         break;
@@ -226,10 +285,10 @@ function createPublischers(){
      
    // zmiana kierunku w zaleznosci od kliknietego przycisku
   function changeDirection(code){
-    //console.log(code);
+   
     switch (code){
     
-      // code bo czy capslock czy nie to i tak dziala
+    
         case 'KeyL':
             cs_0_direction = -1;
             changeButtonColor('button_L');
@@ -258,7 +317,10 @@ function createPublischers(){
             cs_2_direction = -1;
             // zmien kolor przycisku
             changeButtonColor('button_G');
-            // nie najlepszy sposob ale tymczasowy, czemu nie najlepszy?
+            /* 
+            Zaktulizuj wartos suwaka zeby od razu po kilnieciu przycisku pojawila sie pod nim wartosc ze zmienionym znakiem.
+            Inaczej trzeba by bylo przsunac suwak zeby pojawila sie wartosc ze zmienionym znakiem, zaleznym od przyjetego.
+            */
             updateValue('mySlider3');
             break;
 
@@ -279,20 +341,20 @@ function createPublischers(){
   const canvas = document.getElementById("myCanvas");
   const ctx = canvas.getContext("2d");
 
-   //animacja motor2
-   const canvas2 = document.getElementById("myCanvas2");
-   const ctx2 = canvas2.getContext("2d");
+  //animacja motor2
+  const canvas2 = document.getElementById("myCanvas2");
+  const ctx2 = canvas2.getContext("2d");
    
   //animacja motor3
   const canvas3 = document.getElementById("myCanvas3");
   const ctx3 = canvas3.getContext("2d");
 
-  //animacja 3 motorow
+  //animacja 3 motorow zleznych od siebie
   const realational_motor_visualization_canvas = document.getElementById("realational_motor_visualization");
   const realational_motor_visualization_ctx = realational_motor_visualization_canvas.getContext("2d");
 
-   const canvasTable = [canvas,canvas2,canvas3,realational_motor_visualization_canvas];
-   const ctxTable = [ctx,ctx2,ctx3,realational_motor_visualization_ctx];
+  const canvasTable = [canvas,canvas2,canvas3,realational_motor_visualization_canvas];
+  const ctxTable = [ctx,ctx2,ctx3,realational_motor_visualization_ctx];
 
   // Narysuj silnik 
   function drawCircle(x,y,r,context){
@@ -322,8 +384,7 @@ function createPublischers(){
     ctx.stroke();
 
   }
-  
- let positions = [{x:250, y:250}, {x:250, y:350}, {x:250,y:450}];
+ 
  // funkcja odpowiadajaca za animacje silnika
   function animate(){
 
@@ -337,31 +398,39 @@ function createPublischers(){
     // obsuga animacji 3 silnikow zaleznych od siebie
     
     realational_motor_visualization_ctx.clearRect(0,0 ,realational_motor_visualization_canvas.width,realational_motor_visualization_canvas.height);
-    // Rysowanie 3 kol
+    if(!reset_position)
+    {
+      deg = angles;
+    }
+    
     for(let i=0; i<3;i++)
     { 
       let x,y;
-      // pierwsze kolo
+      // pierwsze kolo, ktore jest statyczne
       if(i === 0)
       {
         x = positions[i].x;
         y = positions[i].y;
       }else{
+        // pobierz srodek poprzedniego kola
         const prevX = positions[i-1].x;
         const prevY = positions[i-1].y;
 
-        x = prevX + Math.cos(angles[i]) * 100;
-        y = prevY + Math.sin(angles[i])* 100;
+        // dodaj do tego jakas dlugosc 
+        x = prevX + Math.cos(deg[i]) * 100;
+        y = prevY + Math.sin(deg[i])* 100;
       
         // aktualizacja o aktualna pozycje
         positions[i].x = x;
         positions[i].y = y;
+
+        // narysuj ramie silnika, rysowanie jednak raienia tutaj zostawiam, z powodu wiekszej przejrzystosci.
         realational_motor_visualization_ctx.beginPath();  
         realational_motor_visualization_ctx.moveTo(prevX,prevY);
         realational_motor_visualization_ctx.lineTo(x,y);
         realational_motor_visualization_ctx.stroke();
       }
-      console.log(positions,x,y);
+      
       drawCircle(positions[i].x,positions[i].y,25,realational_motor_visualization_ctx);
     }
    
@@ -374,6 +443,8 @@ document.addEventListener('click',(event) => {
   if(event.target.id === 'status_button' && document.getElementById("status_button").innerHTML === 'Closed')
   {
      ros = connect();
+     // stworz mozliwosc publikacji danych do silnikow dane do silnkow
+     publischers = createPublischers('StartPosition');
      listners = createListners();
 
       // wywolaj serwis
@@ -384,22 +455,44 @@ document.addEventListener('click',(event) => {
       listners[1].subscribe((position_1) => {displayValue(position_1,2)});
       listners[2].subscribe((position_2) => {displayValue(position_2,3)});
     
-      // stworz mozl dane do silnkow
-      publischers = createPublischers();
+      
     
     
 
      // stworz animacje
      animate();
      
+     updateValue('startProgram');
    
   } else if (event.target.id === 'status_button' && document.getElementById("status_button").innerHTML === 'Connected')
   {
+    // zamknij polaczenie
     ros.close();
     document.getElementById("status_button").innerHTML === 'Closed';
+
+
+  } else if(event.target.id === 'position_button' && document.getElementById("position_button").innerHTML == 'Stop'){
+    /* Ten blok wykonuje logike resetu animacji 3 slinkow,
+    ktora polega na wyprostowaniu konstrukcji. Najpierw wylaczamy 'Power', 
+    dla kazdego silnika ustwiajac go na zero. 
+     */
+
+    updateValue('startProgram');
+    deg =[0,0,0];
+    reset_position = true;
+    document.getElementById("position_button").innerHTML = 'GO';
+
+
+  }else if(event.target.id === 'position_button' && document.getElementById("position_button").innerHTML === 'GO'){
+   
+    reset_position = false;
+    document.getElementById("position_button").innerHTML = 'Stop';
+
+
   }
 })
-  
+ 
+// daj dane z serwisu na strone
 function updateLength(result){
   document.getElementById('joints_length0').innerHTML = String(result.data[0]);
   document.getElementById('joints_length1').innerHTML = String(result.data[1]);
@@ -409,9 +502,9 @@ function updateLength(result){
 
  
     
- 
-     sliders.forEach(slider => {
-      slider.addEventListener('input',(event)=> updateValue(event.target.id));
+ // nasluchuj dane z kazdego suwaka
+  sliders.forEach(slider => {
+    slider.addEventListener('input',(event)=> updateValue(event.target.id));
     });
   
     
@@ -419,17 +512,15 @@ function updateLength(result){
      // nasluchujemy jaki przycisk zostal nacisniety
     document.addEventListener('keydown', (event) => changeDirection(event.code));
   
-    // Wywolanie funkcji updateValue, aby zaincijowac wartosc na starcie
-    updateValue('startProgram');
-    
+   
  
 }
  
  
 
   
-// nawiaz polaczenie z serwerem dopiero gdy przycisk zostanie nacisniety
-  startProgram();
+// rozpocznij program
+startProgram();
   
 
 
